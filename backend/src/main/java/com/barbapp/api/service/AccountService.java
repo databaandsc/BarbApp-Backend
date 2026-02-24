@@ -24,39 +24,46 @@ public class AccountService {
         return accountRepository.findByAuthUserId(authUserId);
     }
 
-    // La anotación @Transactional es mágica: si algo falla guardando a medias, deshace la operación entera para no dejar "cuentas fantasma" a medias en la BD.
+    /**
+     * Creates a new user account in the system.
+     * Validates that the provided phone number and authentication ID are unique.
+     * 
+     * @param request The data transfer object containing the user's registration details.
+     * @return AccountResponseDTO The created account data formatted for public API response.
+     * @throws IllegalArgumentException if the phone number or Auth ID already exists.
+     */
     @Transactional
     public AccountResponseDTO createAccount(CreateAccountRequestDTO request) {
 
-        // 1. REGLA DE NEGOCIO: ¿Ya existe alguien con ese teléfono?
+        // Validate unique phone number constraint
         if (accountRepository.findByPhone(request.phone()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe una cuenta con este número de teléfono.");
+            throw new IllegalArgumentException("An account with this phone number already exists.");
         }
 
-        // 2. REGLA DE NEGOCIO: ¿Ese UUID de Supabase ya estaba registrado?
+        // Validate unique authentication user ID constraint
         if (accountRepository.findByAuthUserId(request.authUserId()).isPresent()) {
-            throw new IllegalArgumentException("Esta cuenta de Supabase ya tiene un perfil asociado.");
+            throw new IllegalArgumentException("This authentication user ID is already linked to an account.");
         }
 
-        // 3. Crear el nuevo objeto Account crudo de Base de Datos para guardarlo
+        // Initialize and populate new Account entity
         Account newAccount = new Account();
-        newAccount.setId(UUID.randomUUID()); // Generamos nosotros la Clave Primaria interna
-        newAccount.setAuthUserId(request.authUserId()); // El ID que nos dio Supabase
-        newAccount.setFirstName(request.firstName());
+        newAccount.setId(UUID.randomUUID());
+        newAccount.setAuthUserId(request.authUserId());
+        newAccount.setName(request.name());
         newAccount.setSurname(request.surname());
         newAccount.setPhone(request.phone());
-        newAccount.setRole(request.role()); // Será CLIENT, BARBER, etc.
-        newAccount.setActive(true); // Al crearla, está activa por defecto
+        newAccount.setRole(request.role());
+        newAccount.setActive(true);
         newAccount.setCreatedAt(OffsetDateTime.now());
         newAccount.setUpdatedAt(OffsetDateTime.now());
 
-        // 4. Se lo damos al Encargado del Almacén para que lo guarde físicamente en Supabase
+        // Persist the entity
         Account savedAccount = accountRepository.save(newAccount);
 
-        // 5. Transformamos  (Entity) a (Response DTO) para el Front
+        // Map the persisted entity to a response DTO
         return new AccountResponseDTO(
                 savedAccount.getId(),
-                savedAccount.getFirstName(),
+                savedAccount.getName(),
                 savedAccount.getSurname(),
                 savedAccount.getPhone(),
                 savedAccount.getRole(),
