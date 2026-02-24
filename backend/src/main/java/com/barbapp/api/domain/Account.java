@@ -110,4 +110,5 @@ public class Account {
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
 }
