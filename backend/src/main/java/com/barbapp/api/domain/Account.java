@@ -1,5 +1,7 @@
 package com.barbapp.api.domain;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -14,8 +16,8 @@ public class Account {
     @Column(name = "auth_user_id", nullable = false)
     private UUID authUserId;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @Column(name = "surname", nullable = false)
     private String surname;
@@ -24,8 +26,9 @@ public class Account {
     private String phone;
 
     @Enumerated(EnumType.STRING)
-        @Column(name = "role", nullable = false)
-        private Role role;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "role", nullable = false)
+    private Role role;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
@@ -52,12 +55,12 @@ public class Account {
         this.authUserId = authUserId;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public String getName() {
+        return name;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getSurname() {
@@ -107,4 +110,5 @@ public class Account {
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
 }
