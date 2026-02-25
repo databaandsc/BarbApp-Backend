@@ -6,6 +6,8 @@ public record ServiceResponseDTO(
         UUID id,
         String name,
         String description,
+        Integer durationMinutes,
         BigDecimal price,
-        int durationMinutes
+        boolean isActive
+
 ) { }
