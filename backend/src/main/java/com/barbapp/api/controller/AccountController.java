@@ -2,6 +2,7 @@ package com.barbapp.api.controller;
 
 import com.barbapp.api.domain.Account;
 import com.barbapp.api.service.AccountService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +12,9 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 import java.util.UUID;
+
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -47,12 +51,16 @@ public class AccountController {
      * @return ResponseEntity with the created AccountResponseDTO and HTTP Status 201 Created.
      */
     @PostMapping
-    public ResponseEntity<AccountResponseDTO> createAccount(@RequestBody CreateAccountRequestDTO request) {
+    public ResponseEntity<AccountResponseDTO> createAccount(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody CreateAccountRequestDTO request) {
 
-        // Delegate business logic and persistence to the service layer
-        AccountResponseDTO createdAccount = accountService.createAccount(request);
-        
+        UUID tokenUserId = UUID.fromString(jwt.getSubject());
+
+        AccountResponseDTO createdAccount = accountService.createAccount(tokenUserId, request);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
     }
+
 }
 

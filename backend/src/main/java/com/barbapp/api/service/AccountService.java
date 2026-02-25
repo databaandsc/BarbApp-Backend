@@ -33,7 +33,7 @@ public class AccountService {
      * @throws IllegalArgumentException if the phone number or Auth ID already exists.
      */
     @Transactional
-    public AccountResponseDTO createAccount(CreateAccountRequestDTO request) {
+    public AccountResponseDTO createAccount(UUID authUserId,CreateAccountRequestDTO request) {
 
         // Validate unique phone number constraint
         if (accountRepository.findByPhone(request.phone()).isPresent()) {
@@ -41,14 +41,14 @@ public class AccountService {
         }
 
         // Validate unique authentication user ID constraint
-        if (accountRepository.findByAuthUserId(request.authUserId()).isPresent()) {
+        if (accountRepository.findByAuthUserId(authUserId).isPresent()) {
             throw new IllegalArgumentException("This authentication user ID is already linked to an account.");
         }
 
         // Initialize and populate new Account entity
         Account newAccount = new Account();
         newAccount.setId(UUID.randomUUID());
-        newAccount.setAuthUserId(request.authUserId());
+        newAccount.setAuthUserId(authUserId);
         newAccount.setName(request.name());
         newAccount.setSurname(request.surname());
         newAccount.setPhone(request.phone());
