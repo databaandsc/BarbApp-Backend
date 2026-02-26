@@ -98,6 +98,19 @@ public class AppointmentService {
         return mapToResponseDTO(savedAppointment);
     }
 
+    // Retrieves all appointments for the authenticated client
+    public List<AppointmentResponseDTO> getClientAppointments(UUID clientAuthId) {
+
+        Account client = accountRepository.findByAuthUserId(clientAuthId)
+                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado en el sistema"));
+
+        List<Appointment> appointments = appointmentRepository.findByClientId(client.getId());
+
+        return appointments.stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
     // Helper method to keep the main logic clean
     private AppointmentResponseDTO mapToResponseDTO(Appointment appointment) {
         return new AppointmentResponseDTO(
