@@ -43,7 +43,9 @@ public class SecurityConfig {
 
                 // 3. Define Authorization Rules
                 .authorizeHttpRequests(authz -> authz
-                        // All endpoints under /api/ explicitly require authentication
+                        // Open public endpoints so clients can see the catalog without logging in
+                        .requestMatchers("/api/public/**").permitAll()
+                        // All other endpoints under /api/ explicitly require authentication
                         .requestMatchers("/api/**").authenticated()
                         // Any other request must also be authenticated by default
                         .anyRequest().authenticated()
