@@ -125,4 +125,48 @@ public class AppointmentService {
                 appointment.getClientNotes()
         );
     }
+    // ==========================================
+    // --- STATE MANAGEMENT ---
+    // ==========================================
+
+    @Transactional
+    public AppointmentResponseDTO updateAppointmentStatus(UUID tokenUserId, UUID appointmentId, AppointmentStatus newStatus) {
+
+        // 1. Fetch the target appointment
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("La cita no existe."));
+
+        // 2. Fetch the requesting user's account to evaluate permissions
+        Account requestor = accountRepository.findByAuthUserId(tokenUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no autenticado."));
+
+        // 3. SECURITY & AUTHORIZATION RULES
+        boolean isAdmin = requestor.getRole().name().equals("ADMIN");
+        boolean isTheAssignedBarber = requestor.getId().equals(appointment.getBarberId());
+        boolean isTheClient = requestor.getId().equals(appointment.getClientId());
+
+        if (newStatus == AppointmentStatus.CANCELLED) {
+            // Clients, Assigned Barbers, and Admins can all CANCEL an appointment
+            if (!isAdmin && !isTheAssignedBarber && !isTheClient) {
+                throw new SecurityException("No tienes permiso para cancelar esta cita.");
+            }
+        } else {
+            // Only Assigned Barbers and Admins can transition to CONFIRMED, COMPLETED, NO_SHOW, etc.
+            if (!isAdmin && !isTheAssignedBarber) {
+                throw new SecurityException("No tienes permiso para gestionar esta cita.");
+            }
+        }
+
+        // 4. Update the status and audit trail
+        appointment.setStatus(newStatus);
+        appointment.setDecidedBy(requestor.getId());
+        appointment.setDecidedAt(OffsetDateTime.now());
+        appointment.setUpdatedAt(OffsetDateTime.now());
+
+        // 5. Persist to database & return the mapped DTO
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        return mapToResponseDTO(savedAppointment);
+    }
+
+
 }
