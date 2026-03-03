@@ -15,4 +15,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
 
     // Retrieves all appointments assigned to a specific barber
     List<Appointment> findByBarberId(UUID barberId);
+
+    // Retrieves appointments for a barber within a specific time range (e.g., a single day)
+    List<Appointment> findByBarberIdAndStartAtBetween(UUID barberId, java.time.OffsetDateTime startAt, java.time.OffsetDateTime endAt);
 }

@@ -1,5 +1,6 @@
 package com.barbapp.api.controller;
 
+import com.barbapp.api.domain.AppointmentStatus;
 import com.barbapp.api.dto.AppointmentResponseDTO;
 import com.barbapp.api.dto.CreateAppointmentRequestDTO;
 import com.barbapp.api.service.AppointmentService;
@@ -9,11 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -51,4 +48,30 @@ public class AppointmentController {
 
         return ResponseEntity.ok(myAppointments);
     }
+
+    // ==========================================
+    // --- STATE MANAGEMENT ENDPOINTS ---
+    // ==========================================
+
+    /**
+     * Endpoint for transitioning an appointment's status (e.g., PENDING -> CONFIRMED -> COMPLETED).
+     * Clients can only transition to CANCELLED.
+     * Barbers/Admins can transition to any valid state.
+     */
+    @PatchMapping("/{appointmentId}/status")
+    public ResponseEntity<AppointmentResponseDTO> updateAppointmentStatus(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID appointmentId,
+            @RequestParam AppointmentStatus newStatus) {
+
+        // Extract the authenticated user's ID from the JWT token
+        UUID tokenUserId = UUID.fromString(jwt.getSubject());
+
+        // Delegate state transition logic and security validation to the service
+        AppointmentResponseDTO updatedAppointment = appointmentService.updateAppointmentStatus(tokenUserId, appointmentId, newStatus);
+
+        // Return 200 OK with the updated appointment data
+        return ResponseEntity.ok(updatedAppointment);
+    }
+
 }

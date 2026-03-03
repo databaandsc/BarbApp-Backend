@@ -13,4 +13,8 @@ public interface BarberScheduleRepository extends JpaRepository<BarberSchedule, 
     // Retrieves all active schedules for a specific barber
     List<BarberSchedule> findByBarberIdAndIsActiveTrue(UUID barberId);
 
+    // Retrieves the active schedule for a specific barber on a specific day of the week
+    java.util.Optional<BarberSchedule> findByBarberIdAndWeekdayAndIsActiveTrue(UUID barberId, int weekday);
+
+
 }
