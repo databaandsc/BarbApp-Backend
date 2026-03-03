@@ -14,4 +14,8 @@ public interface BarberTimeOffRepository extends JpaRepository<BarberTimeOff, UU
     // Retrieves all upcoming time off entries for a specific barber
     List<BarberTimeOff> findByBarberIdAndEndAtAfter(UUID barberId, OffsetDateTime now);
 
+    // Retrieves any time off for a barber that overlaps with a specific date range
+    List<BarberTimeOff> findByBarberIdAndStartAtBeforeAndEndAtAfter(UUID barberId, java.time.OffsetDateTime endOfDay, java.time.OffsetDateTime startOfDay);
+
+
 }
