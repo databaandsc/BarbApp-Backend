@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -82,7 +79,7 @@ public class AccountService {
      */
     public List<BarberPublicDTO> findAllPublicBarbers() {
 
-        return accountRepository.findByRoleIn(Collections.singletonList(Role.BARBER)).stream()
+        return accountRepository.findByRoleIn(Arrays.asList(Role.BARBER, Role.ADMIN)).stream()
                 .map(account -> new BarberPublicDTO(
                         account.getId(),
                         account.getName(),
