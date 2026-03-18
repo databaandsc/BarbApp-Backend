@@ -1,6 +1,7 @@
 package com.barbapp.api.repository;
 
 import com.barbapp.api.domain.Account;
+import com.barbapp.api.domain.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,5 +18,7 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     // Retrieves a list of accounts based on their role (e.g., to find all Barbers)
     List<Account> findByRoleIn(List<com.barbapp.api.domain.Role> roles);
+
+    List<Account> findByRole(Role role);
 
 }

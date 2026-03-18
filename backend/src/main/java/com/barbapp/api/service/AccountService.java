@@ -1,6 +1,8 @@
 package com.barbapp.api.service;
 
 import com.barbapp.api.domain.Account;
+import com.barbapp.api.domain.Role;
+import com.barbapp.api.dto.BarberPublicDTO;
 import com.barbapp.api.dto.CreateAccountRequestDTO; // Importamos el DTO de entrada
 import com.barbapp.api.dto.AccountResponseDTO;      // Importamos el DTO de salida
 import com.barbapp.api.repository.AccountRepository;
@@ -8,8 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AccountService {
@@ -69,5 +74,20 @@ public class AccountService {
                 savedAccount.getRole(),
                 savedAccount.isActive()
         );
+    }
+
+    /**
+     * Returns a list of barbers for the public catalog.
+     * Filters accounts by Role.BARBER and converts them to the secure DTO.
+     */
+    public List<BarberPublicDTO> findAllPublicBarbers() {
+
+        return accountRepository.findByRoleIn(Collections.singletonList(Role.BARBER)).stream()
+                .map(account -> new BarberPublicDTO(
+                        account.getId(),
+                        account.getName(),
+                        account.getSurname()
+                ))
+                .collect(Collectors.toList());
     }
 }
