@@ -49,6 +49,15 @@ public class AppointmentController {
         return ResponseEntity.ok(myAppointments);
     }
 
+    // GET /api/appointments/admin/all -> List ALL appointments (Admin only)
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<AppointmentResponseDTO>> getAllAppointments(@AuthenticationPrincipal Jwt jwt) {
+        // Optional: could validate the ADMIN role here as extra security
+        List<AppointmentResponseDTO> allAppointments = appointmentService.getAllAppointments();
+        return ResponseEntity.ok(allAppointments);
+    }
+
+
     // ==========================================
     // --- STATE MANAGEMENT ENDPOINTS ---
     // ==========================================

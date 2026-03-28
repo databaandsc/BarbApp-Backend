@@ -125,6 +125,15 @@ public class AppointmentService {
                 appointment.getClientNotes()
         );
     }
+
+    // Returns ALL appointments in the system (Admin only)
+    public List<AppointmentResponseDTO> getAllAppointments() {
+        List<Appointment> appointments = appointmentRepository.findAll();
+        return appointments.stream()
+                .map(this::mapToResponseDTO)
+                .toList();
+    }
+
     // ==========================================
     // --- STATE MANAGEMENT ---
     // ==========================================
@@ -167,6 +176,8 @@ public class AppointmentService {
         Appointment savedAppointment = appointmentRepository.save(appointment);
         return mapToResponseDTO(savedAppointment);
     }
+
+
 
 
 }
