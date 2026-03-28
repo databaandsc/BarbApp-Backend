@@ -113,9 +113,14 @@ public class AppointmentService {
 
     // Helper method to keep the main logic clean
     private AppointmentResponseDTO mapToResponseDTO(Appointment appointment) {
+        // Resolve the client's display name from their account record
+        String clientName = accountRepository.findById(appointment.getClientId())
+                .map(account -> account.getName() + " " + account.getSurname())
+                .orElse("Unknown Client");
         return new AppointmentResponseDTO(
                 appointment.getId(),
                 appointment.getClientId(),
+                clientName,
                 appointment.getBarberId(),
                 appointment.getStartAt(),
                 appointment.getEndAt(),
