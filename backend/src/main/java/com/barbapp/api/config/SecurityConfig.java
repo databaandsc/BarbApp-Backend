@@ -3,9 +3,13 @@ package com.barbapp.api.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -13,76 +17,69 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
-/**
- * Global Security Configuration for the API.
- * Defines access rules, CORS policies, and configures the application
- * to act as an OAuth2 Resource Server validating JWTs from Supabase.
- */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    /**
-     * Configures the main security filter chain.
-     *
-     * @param http The HttpSecurity builder provided by Spring.
-     * @return SecurityFilterChain The configured security chain.
-     * @throws Exception if an error occurs during configuration.
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Disable CSRF (Cross-Site Request Forgery) protection
-                // Standard practice for REST APIs where the browser isn't managing sessions
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // 2. Enable CORS (Cross-Origin Resource Sharing)
-                // Allows our React Native frontend to communicate with this backend
                 .cors(Customizer.withDefaults())
-
-                // 3. Define Authorization Rules
                 .authorizeHttpRequests(authz -> authz
-                        // Open public endpoints so clients can see the catalog without logging in
                         .requestMatchers("/api/public/**").permitAll()
-                        // All other endpoints under /api/ explicitly require authentication
+                        .requestMatchers("/api/appointments/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/**").authenticated()
-                        // Any other request must also be authenticated by default
                         .anyRequest().authenticated()
                 )
-
-                // 4. Configure as OAuth2 Resource Server
-                // Tells Spring to look for a Bearer token in the 'Authorization' header
-                // and validate it as a JWT against the Issuer URI defined in application.yml
+                // ↓ CAMBIO: registramos nuestro converter personalizado
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults())
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 );
 
         return http.build();
     }
 
-    /**
-     * Configures global CORS policies.
-     * This setup allows requests from any origin, which is suitable for development
-     * or mobile apps (React Native) that don't have a fixed origin domain.
-     *
-     * @return CorsConfigurationSource defining the allowed origins, methods, and headers.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Allow all origins (standard for mobile apps)
         configuration.setAllowedOrigins(List.of("*"));
-
-        // Allow common HTTP methods used in REST
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-        // Allow standard headers required for JWT and JSON communication
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    /**
+     * Custom JWT Authentication Converter.
+     *
+     * The default Spring Security JWT converter reads authorities from standard
+     * 'scope' or 'authorities' claims. However, Supabase stores the user role
+     * inside the nested 'user_metadata.role' claim of the JWT payload.
+     *
+     * This converter bridges that gap by extracting the role from the nested
+     * claim and converting it into a GrantedAuthority that Spring Security can
+     * evaluate in authorization rules like hasAuthority("ADMIN").
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
+        jwtConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            // Extract the nested user_metadata claim map
+            Map<String, Object> userMetadata = jwt.getClaimAsMap("user_metadata");
+            if (userMetadata == null) return List.of();
+
+            // Read the role field from the metadata
+            Object role = userMetadata.get("role");
+            if (role == null) return List.of();
+
+            // Convert the role string into a GrantedAuthority
+            return List.of(new SimpleGrantedAuthority(role.toString()));
+        });
+        return jwtConverter;
     }
 }
