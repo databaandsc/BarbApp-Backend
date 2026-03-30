@@ -9,11 +9,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.http.SessionCreationPolicy;
+
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,13 +30,19 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                // Configure session management to be stateless.
+                // Configurar la gestión de sesiones para que sea sin estado.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
+                        // Permit access to Swagger documentation and root path.
+                        // Permitir el acceso a la documentación de Swagger y a la ruta raíz.
+                        .requestMatchers("/", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/appointments/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/**").authenticated()
+                        // Require authentication for any other request.
+                        // Requerir autenticación para cualquier otra petición.
                         .anyRequest().authenticated()
                 )
-                // ↓ CAMBIO: registramos nuestro converter personalizado
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 );
@@ -48,11 +55,16 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+
+        // Add apikey and X-Client-Info headers required by Supabase client.
+        // Añadir cabeceras apikey y X-Client-Info requeridas por el cliente de Supabase.
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "apikey", "X-Client-Info"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
 
     /**
      * Custom JWT Authentication Converter.
