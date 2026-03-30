@@ -113,15 +113,22 @@ public class AppointmentService {
 
     // Helper method to keep the main logic clean
     private AppointmentResponseDTO mapToResponseDTO(Appointment appointment) {
-        // Resolve the client's display name from their account record
+        // Resolve the client's display name from their account record.
+        // Resolver el nombre del cliente desde su cuenta.
         String clientName = accountRepository.findById(appointment.getClientId())
                 .map(account -> account.getName() + " " + account.getSurname())
                 .orElse("Unknown Client");
+        // Resolve the barber's display name from their account record.
+        // Resolver el nombre del barbero desde su cuenta.
+        String barberName = accountRepository.findById(appointment.getBarberId())
+                .map(account -> account.getName() + " " + account.getSurname())
+                .orElse("Unknown Barber");
         return new AppointmentResponseDTO(
                 appointment.getId(),
                 appointment.getClientId(),
                 clientName,
                 appointment.getBarberId(),
+                barberName,
                 appointment.getStartAt(),
                 appointment.getEndAt(),
                 appointment.getStatus(),
@@ -181,8 +188,5 @@ public class AppointmentService {
         Appointment savedAppointment = appointmentRepository.save(appointment);
         return mapToResponseDTO(savedAppointment);
     }
-
-
-
 
 }
