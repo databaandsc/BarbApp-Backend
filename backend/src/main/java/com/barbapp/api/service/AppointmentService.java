@@ -112,23 +112,40 @@ public class AppointmentService {
     }
 
     // Helper method to keep the main logic clean
+    // Helper method to map entities to a clean DTO
     private AppointmentResponseDTO mapToResponseDTO(Appointment appointment) {
-        // Resolve the client's display name from their account record.
-        // Resolver el nombre del cliente desde su cuenta.
+
+        // 1. Resolve client details (Name and Phone)
         String clientName = accountRepository.findById(appointment.getClientId())
                 .map(account -> account.getName() + " " + account.getSurname())
-                .orElse("Unknown Client");
-        // Resolve the barber's display name from their account record.
-        // Resolver el nombre del barbero desde su cuenta.
+                .orElse("Cliente Desconocido");
+
+        String clientPhone = accountRepository.findById(appointment.getClientId())
+                .map(Account::getPhone)
+                .orElse("Sin Teléfono");
+
+        // 2. Resolve barber details
         String barberName = accountRepository.findById(appointment.getBarberId())
                 .map(account -> account.getName() + " " + account.getSurname())
-                .orElse("Unknown Barber");
+                .orElse("Barbero Desconocido");
+
+        // 3. Fetch requested services for this appointment and extract their names
+        List<String> serviceNames = appointmentItemRepository.findByAppointmentId(appointment.getId())
+                .stream()
+                .map(item -> serviceRepository.findById(item.getServiceId())
+                        .map(com.barbapp.api.domain.Service::getName)
+                        .orElse("Servicio Borrado"))
+                .toList();
+
+        // 4. Return the enriched DTO
         return new AppointmentResponseDTO(
                 appointment.getId(),
                 appointment.getClientId(),
                 clientName,
+                clientPhone,
                 appointment.getBarberId(),
                 barberName,
+                serviceNames,
                 appointment.getStartAt(),
                 appointment.getEndAt(),
                 appointment.getStatus(),
@@ -137,6 +154,7 @@ public class AppointmentService {
                 appointment.getClientNotes()
         );
     }
+
 
     // Returns ALL appointments in the system (Admin only)
     public List<AppointmentResponseDTO> getAllAppointments() {
