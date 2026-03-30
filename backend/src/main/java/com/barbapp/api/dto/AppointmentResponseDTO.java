@@ -8,7 +8,9 @@ import java.util.UUID;
 public record AppointmentResponseDTO(
         UUID id,
         UUID clientId,
+        String clientName,
         UUID barberId,
+        String barberName,
         OffsetDateTime startAt,
         OffsetDateTime endAt,
         AppointmentStatus status,

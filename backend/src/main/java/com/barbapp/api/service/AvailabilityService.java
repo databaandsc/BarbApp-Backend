@@ -37,17 +37,16 @@ public class AvailabilityService {
         // 1. Verify existence and role
         accountRepository.findById(barberId)
                 .filter(acc -> acc.getRole().name().equals("BARBER") || acc.getRole().name().equals("ADMIN"))
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró un barbero válido con ese ID"));
+                .orElseThrow(() -> new IllegalArgumentException("No valid barber found with this ID"));
 
-        // 2. Discover the day of the week
+        // 2. Discover the day of the week (1 = Monday, 7 = Sunday)
         int weekday = date.getDayOfWeek().getValue();
 
-        // 3. Obtain the Base Schedule
-        BarberSchedule schedule = scheduleRepository.findByBarberIdAndWeekdayAndIsActiveTrue(barberId, weekday)
-                .orElse(null);
+        // 3. Obtain the Base Schedules (Supports multiple shifts per day, e.g., morning and afternoon)
+        List<BarberSchedule> schedules = scheduleRepository.findByBarberIdAndWeekdayAndIsActiveTrue(barberId, weekday);
 
-        // If they don't work that day, return empty list
-        if (schedule == null) {
+        // If they don't work that day (no schedules found), return an empty list
+        if (schedules.isEmpty()) {
             return new ArrayList<>();
         }
 
@@ -55,7 +54,7 @@ public class AvailabilityService {
         OffsetDateTime startOfDay = date.atStartOfDay().atOffset(ZoneOffset.UTC);
         OffsetDateTime endOfDay = date.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC);
 
-        // 5. Fetch overlapping Time Offs (Ausencias específicas por horas)
+        // 5. Fetch overlapping Time Offs (Specific hourly absences)
         List<BarberTimeOff> timeOffs = timeOffRepository.findByBarberIdAndStartAtBeforeAndEndAtAfter(barberId, endOfDay, startOfDay);
 
         // 6. Fetch existing appointments
@@ -63,47 +62,55 @@ public class AvailabilityService {
 
         // 7. GENERATE THE SLOTS
         List<AvailableSlotDTO> availableSlots = new ArrayList<>();
-        LocalTime currentSlotStart = schedule.getStartTime();
 
-        while (currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES).isBefore(schedule.getEndTime()) ||
-                currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES).equals(schedule.getEndTime())) {
+        // Loop through each shift (e.g., first loop: 09:00 to 14:00, second loop: 17:00 to 21:00)
+        for (BarberSchedule schedule : schedules) {
+            LocalTime currentSlotStart = schedule.getStartTime();
 
-            LocalTime currentSlotEnd = currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES);
-            boolean isSlotTaken = false;
+            while (currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES).isBefore(schedule.getEndTime()) ||
+                    currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES).equals(schedule.getEndTime())) {
 
-            // 7.1 Check against actual appointments
-            for (Appointment appointment : existingAppointments) {
-                LocalTime appointmentStart = appointment.getStartAt().toLocalTime();
-                LocalTime appointmentEnd = appointment.getEndAt().toLocalTime();
+                LocalTime currentSlotEnd = currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES);
+                boolean isSlotTaken = false;
 
-                if (currentSlotStart.isBefore(appointmentEnd) && currentSlotEnd.isAfter(appointmentStart)) {
-                    isSlotTaken = true;
-                    break; // Early exit: slot is already dead, stop checking more appointments
-                }
-            }
+                // 7.1 Check against actual appointments
+                for (Appointment appointment : existingAppointments) {
+                    LocalTime appointmentStart = appointment.getStartAt().toLocalTime();
+                    LocalTime appointmentEnd = appointment.getEndAt().toLocalTime();
 
-            // 7.2 Check against Time Offs (Only if it survived the previous check)
-            if (!isSlotTaken) {
-                for (BarberTimeOff timeOff : timeOffs) {
-                    LocalTime timeOffStart = timeOff.getStartAt().toLocalTime();
-                    LocalTime timeOffEnd = timeOff.getEndAt().toLocalTime();
-
-                    if (currentSlotStart.isBefore(timeOffEnd) && currentSlotEnd.isAfter(timeOffStart)) {
+                    if (currentSlotStart.isBefore(appointmentEnd) && currentSlotEnd.isAfter(appointmentStart)) {
                         isSlotTaken = true;
-                        break; // Early exit: slot conflicts with time off, stop checking other absences
+                        break; // Early exit: slot is already dead, stop checking more appointments
                     }
                 }
-            }
 
-            // 7.3 If free from both appointments and time-offs, add to list
-            if (!isSlotTaken) {
-                availableSlots.add(new AvailableSlotDTO(currentSlotStart, currentSlotEnd));
-            }
+                // 7.2 Check against Time Offs (Only if it survived the previous check)
+                if (!isSlotTaken) {
+                    for (BarberTimeOff timeOff : timeOffs) {
+                        LocalTime timeOffStart = timeOff.getStartAt().toLocalTime();
+                        LocalTime timeOffEnd = timeOff.getEndAt().toLocalTime();
 
-            // Advance the cursor for the next iteration (e.g., from 10:00 to 10:30)
-            currentSlotStart = currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES);
+                        if (currentSlotStart.isBefore(timeOffEnd) && currentSlotEnd.isAfter(timeOffStart)) {
+                            isSlotTaken = true;
+                            break; // Early exit: slot conflicts with time off, stop checking other absences
+                        }
+                    }
+                }
+
+                // 7.3 If free from both appointments and time-offs, add to the raw list
+                if (!isSlotTaken) {
+                    availableSlots.add(new AvailableSlotDTO(currentSlotStart, currentSlotEnd));
+                }
+
+                // Advance the cursor for the next iteration (e.g., from 10:00 to 10:30)
+                currentSlotStart = currentSlotStart.plusMinutes(SLOT_DURATION_MINUTES);
+            }
         }
 
-        return availableSlots;
+        // 8. FINAL CLEANUP: Remove duplicates and sort chronologically
+        return availableSlots.stream()
+                .distinct()
+                .sorted(java.util.Comparator.comparing(AvailableSlotDTO::startTime))
+                .toList();
     }
 }
