@@ -28,6 +28,8 @@ public class AppointmentService {
 
     // @Transactional ensures that if any part of this process fails (e.g., saving items fails),
     // the entire transaction is rolled back and no partial data is saved to the database.
+    // @Transactional asegura que si cualquier parte del proceso falla, la transacción entera 
+    // se revierte y no se guardan datos parciales en la base de datos.
     @Transactional
     public AppointmentResponseDTO createAppointment(UUID clientAuthId, CreateAppointmentRequestDTO request) {
 
@@ -98,7 +100,10 @@ public class AppointmentService {
         return mapToResponseDTO(savedAppointment);
     }
 
-    // Retrieves all appointments for the authenticated client
+    /**
+     * Retrieves all appointments for the authenticated client.
+     * Obtiene todas las citas para el cliente autenticado.
+     */
     public List<AppointmentResponseDTO> getClientAppointments(UUID clientAuthId) {
 
         Account client = accountRepository.findByAuthUserId(clientAuthId)
@@ -111,8 +116,10 @@ public class AppointmentService {
                 .toList();
     }
 
-    // Helper method to keep the main logic clean
-    // Helper method to map entities to a clean DTO
+    /**
+     * Helper method to map domain entities to a clean response DTO.
+     * Método auxiliar para mapear entidades del dominio a un DTO de respuesta limpio.
+     */
     private AppointmentResponseDTO mapToResponseDTO(Appointment appointment) {
 
         // 1. Resolve client details (Name and Phone)
@@ -156,7 +163,10 @@ public class AppointmentService {
     }
 
 
-    // Returns ALL appointments in the system (Admin only)
+    /**
+     * Returns ALL appointments in the system (Admin only).
+     * Devuelve TODAS las citas en el sistema (Solo Administrador).
+     */
     public List<AppointmentResponseDTO> getAllAppointments() {
         List<Appointment> appointments = appointmentRepository.findAll();
         return appointments.stream()
@@ -165,7 +175,7 @@ public class AppointmentService {
     }
 
     // ==========================================
-    // --- STATE MANAGEMENT ---
+    // --- STATE MANAGEMENT / GESTIÓN DE ESTADO ---
     // ==========================================
 
     @Transactional
