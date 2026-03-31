@@ -28,11 +28,15 @@ public class AccountService {
 
     /**
      * Creates a new user account in the system.
-     * Validates that the provided phone number and authentication ID are unique.
+     * Crea una nueva cuenta de usuario en el sistema.
      * 
-     * @param request The data transfer object containing the user's registration details.
-     * @return AccountResponseDTO The created account data formatted for public API response.
-     * @throws IllegalArgumentException if the phone number or Auth ID already exists.
+     * Validates that the provided phone number and authentication ID are unique.
+     * Valida que el número de teléfono y el ID de autenticación proporcionados sean únicos.
+     * 
+     * @param authUserId The UUID from Supabase auth. / El UUID de la autenticación de Supabase.
+     * @param request The data transfer object containing the user's registration details. / El objeto de transferencia de datos con los detalles de registro.
+     * @return AccountResponseDTO The created account data. / Los datos de la cuenta creada.
+     * @throws IllegalArgumentException if the phone number or Auth ID already exists. / si el teléfono o Auth ID ya existen.
      */
     @Transactional
     public AccountResponseDTO createAccount(UUID authUserId,CreateAccountRequestDTO request) {
@@ -75,7 +79,10 @@ public class AccountService {
 
     /**
      * Returns a list of barbers for the public catalog.
-     * Filters accounts by Role.BARBER and converts them to the secure DTO.
+     * Devuelve una lista de barberos para el catálogo público.
+     * 
+     * Filters accounts by Role and converts them to the secure DTO.
+     * Filtra las cuentas por Rol y las convierte al DTO seguro.
      */
     public List<BarberPublicDTO> findAllPublicBarbers() {
 
