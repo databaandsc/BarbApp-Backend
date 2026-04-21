@@ -17,6 +17,11 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import com.barbapp.api.dto.CreateAccountRequestDTO;
+import java.util.Optional;
+
 // ExtendWith enables Mockito annotations like @Mock and @InjectMocks.
 // ExtendWith habilita las anotaciones de Mockito como @Mock y @InjectMocks.
 @ExtendWith(MockitoExtension.class)
@@ -62,5 +67,26 @@ public class AccountServiceTest {
         assertEquals(2, result.size());
         assertEquals("John", result.get(0).name());
         assertEquals("Jane", result.get(1).name());
+    }
+    @Test
+    public void testCreateAccount_failsIfPhoneAlreadyExists() {
+        // --- ARRANGE (Preparación) ---
+        // Creamos un DTO falso simulando los datos que enviaría el usuario por la red
+        CreateAccountRequestDTO fakeRequest = new CreateAccountRequestDTO(
+                "Carlos", "Perez", "600123456", Role.CLIENT
+        );
+        UUID fakeAuthId = UUID.randomUUID();
+        // Le enseñamos al Mock: "Si alguien busca el teléfono 600123456, dile que ya existe un usuario"
+        when(accountRepository.findByPhone(fakeRequest.phone()))
+                .thenReturn(Optional.of(new Account())); // Devuelve una cuenta presente
+        // --- ACT & ASSERT (Ejecución y Comprobación simultánea) ---
+        // Le decimos a JUnit que vigile. Si al intentar crear la cuenta no salta una excepción
+        // de tipo IllegalArgumentException, entonces el test fallará.
+        IllegalArgumentException thrownError = assertThrows(
+                IllegalArgumentException.class,
+                () -> accountService.createAccount(fakeAuthId, fakeRequest)
+        );
+        // Opcional: Verificamos que además el mensaje de error es el correcto
+        assertEquals("An account with this phone number already exists.", thrownError.getMessage());
     }
 }
