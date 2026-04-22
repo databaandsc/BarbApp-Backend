@@ -75,14 +75,21 @@ public class AvailabilityService {
 
                 // 7.1 Check against actual appointments
                 for (Appointment appointment : existingAppointments) {
-                    LocalTime appointmentStart = appointment.getStartAt().toLocalTime();
-                    LocalTime appointmentEnd = appointment.getEndAt().toLocalTime();
+                    // NUEVO: Verificamos el estado. Solo bloquea si está en PENDING o CONFIRMED.
+                    String status = String.valueOf(appointment.getStatus());
+                    if (status.equals("PENDING") || status.equals("CONFIRMED")) {
 
-                    if (currentSlotStart.isBefore(appointmentEnd) && currentSlotEnd.isAfter(appointmentStart)) {
-                        isSlotTaken = true;
-                        break; // Early exit: slot is already dead, stop checking more appointments
+                        LocalTime appointmentStart = appointment.getStartAt().toLocalTime();
+                        LocalTime appointmentEnd = appointment.getEndAt().toLocalTime();
+
+                        // Si mi hora coincide con esta cita, lo marcamos como ocupado
+                        if (currentSlotStart.isBefore(appointmentEnd) && currentSlotEnd.isAfter(appointmentStart)) {
+                            isSlotTaken = true;
+                            break; // El hueco está muerto, no miramos más citas
+                        }
                     }
                 }
+
 
                 // 7.2 Check against Time Offs (Only if it survived the previous check)
                 if (!isSlotTaken) {
