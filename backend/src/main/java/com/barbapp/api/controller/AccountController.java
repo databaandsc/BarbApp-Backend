@@ -28,9 +28,10 @@ public class AccountController {
 
     /**
      * Retrieves an account representation by its associated authentication user ID.
+     * Recupera una representación de la cuenta a través de su ID de usuario de autenticación asociado.
      * 
-     * @param authUserId The UUID provided by the authentication provider.
-     * @return ResponseEntity containing the Account entity if found, or 404 Not Found.
+     * @param authUserId The UUID provided by the authentication provider. / El UUID proporcionado por el proveedor de autenticación.
+     * @return ResponseEntity containing the Account entity if found, or 404 Not Found. / ResponseEntity que contiene la entidad de Cuenta si se encuentra, o 404 No Encontrado.
      */
     @GetMapping("/auth/{authUserId}")
     public ResponseEntity<Account> getAccountByAuthId(@PathVariable UUID authUserId) {
@@ -46,9 +47,10 @@ public class AccountController {
 
     /**
      * Registers a new user account in the system.
+     * Registra una nueva cuenta de usuario en el sistema.
      * 
-     * @param request The data transfer object containing the user's registration details.
-     * @return ResponseEntity with the created AccountResponseDTO and HTTP Status 201 Created.
+     * @param request The data transfer object containing the user's registration details. / El objeto de transferencia de datos con los detalles de registro del usuario.
+     * @return ResponseEntity with the created AccountResponseDTO and HTTP Status 201 Created. / ResponseEntity con el AccountResponseDTO creado y el Estado HTTP 201 Creado.
      */
     @PostMapping
     public ResponseEntity<AccountResponseDTO> createAccount(

@@ -20,6 +20,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Security Configuration Matrix.
+ * Matriz de Configuración de Seguridad.
+ * 
+ * Establishes stateless HTTP security and manages JWT processing.
+ * Establece la seguridad HTTP sin estado y gestiona el procesamiento de JWT.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -68,28 +75,40 @@ public class SecurityConfig {
 
     /**
      * Custom JWT Authentication Converter.
+     * Conversor de Autenticación JWT Personalizado.
      *
      * The default Spring Security JWT converter reads authorities from standard
      * 'scope' or 'authorities' claims. However, Supabase stores the user role
      * inside the nested 'user_metadata.role' claim of the JWT payload.
+     * 
+     * El conversor JWT por defecto de Spring Security lee las autoridades de los
+     * claims estándar 'scope' o 'authorities'. Sin embargo, Supabase almacena el rol
+     * del usuario dentro del claim anidado 'user_metadata.role' del payload JWT.
      *
      * This converter bridges that gap by extracting the role from the nested
      * claim and converting it into a GrantedAuthority that Spring Security can
      * evaluate in authorization rules like hasAuthority("ADMIN").
+     * 
+     * Este conversor cierra esa brecha extrayendo el rol del claim anidado y
+     * convirtiéndolo en un GrantedAuthority que Spring Security puede evaluar en
+     * reglas de autorización como hasAuthority("ADMIN").
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
             // Extract the nested user_metadata claim map
+            // Extraer el mapa del claim anidado user_metadata
             Map<String, Object> userMetadata = jwt.getClaimAsMap("user_metadata");
             if (userMetadata == null) return List.of();
 
             // Read the role field from the metadata
+            // Leer el campo de rol desde los metadatos
             Object role = userMetadata.get("role");
             if (role == null) return List.of();
 
             // Convert the role string into a GrantedAuthority
+            // Convertir la cadena del rol en un GrantedAuthority
             return List.of(new SimpleGrantedAuthority(role.toString()));
         });
         return jwtConverter;

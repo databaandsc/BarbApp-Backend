@@ -51,9 +51,11 @@ public class AppointmentController {
     @GetMapping
     public ResponseEntity<List<AppointmentResponseDTO>> getMyAppointments(@AuthenticationPrincipal Jwt jwt) {
 
+        // Extract the user's UUID from the token
         // Extrae el UUID del usuario del token
         UUID tokenUserId = UUID.fromString(jwt.getSubject());
 
+        // Call the service to fetch the client's appointments
         // Llama al servicio para obtener las citas del cliente
         List<AppointmentResponseDTO> myAppointments = appointmentService.getClientAppointments(tokenUserId);
 

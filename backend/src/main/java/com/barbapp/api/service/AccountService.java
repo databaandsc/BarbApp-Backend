@@ -3,8 +3,8 @@ package com.barbapp.api.service;
 import com.barbapp.api.domain.Account;
 import com.barbapp.api.domain.Role;
 import com.barbapp.api.dto.BarberPublicDTO;
-import com.barbapp.api.dto.CreateAccountRequestDTO; // Importamos el DTO de entrada
-import com.barbapp.api.dto.AccountResponseDTO;      // Importamos el DTO de salida
+import com.barbapp.api.dto.CreateAccountRequestDTO; // Import the input DTO / Importamos el DTO de entrada
+import com.barbapp.api.dto.AccountResponseDTO;      // Import the output DTO / Importamos el DTO de salida
 import com.barbapp.api.repository.AccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,16 +42,19 @@ public class AccountService {
     public AccountResponseDTO createAccount(UUID authUserId,CreateAccountRequestDTO request) {
 
         // Validate unique phone number constraint
+        // Validar restricción de número de teléfono único
         if (accountRepository.findByPhone(request.phone()).isPresent()) {
             throw new IllegalArgumentException("An account with this phone number already exists.");
         }
 
         // Validate unique authentication user ID constraint
+        // Validar restricción de ID de usuario de autenticación único
         if (accountRepository.findByAuthUserId(authUserId).isPresent()) {
             throw new IllegalArgumentException("This authentication user ID is already linked to an account.");
         }
 
         // Initialize and populate new Account entity
+        // Inicializar y poblar la nueva entidad Account
         Account newAccount = new Account();
         newAccount.setId(UUID.randomUUID());
         newAccount.setAuthUserId(authUserId);
@@ -64,9 +67,11 @@ public class AccountService {
         newAccount.setUpdatedAt(OffsetDateTime.now());
 
         // Persist the entity
+        // Persistir la entidad
         Account savedAccount = accountRepository.save(newAccount);
 
         // Map the persisted entity to a response DTO
+        // Mapear la entidad persistida a un DTO de respuesta
         return new AccountResponseDTO(
                 savedAccount.getId(),
                 savedAccount.getName(),
